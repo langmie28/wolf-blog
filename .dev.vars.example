@@ -1,0 +1,5 @@
+ENCRYPTION_KEY=<base64-encoded-32-byte-aes-256-key>
+SUPABASE_SERVICE_ROLE_KEY=<enc:iv:ciphertext:authTag or plain service_role_key>
+ADMIN_PASSWORD=<enc:iv:ciphertext:authTag or plain password>
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-project-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>

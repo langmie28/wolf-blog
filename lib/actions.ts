@@ -1,25 +1,30 @@
 'use server'
 
-import { supabaseAdmin } from './supabase'
+import { getSupabaseAdmin } from './supabase'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
-import { createHash } from 'crypto'
+import { decrypt } from './crypto'
 
-function hash(s: string) {
-  return createHash('sha256').update(s).digest('hex')
+async function hash(s: string): Promise<string> {
+  const data = new TextEncoder().encode(s)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 async function requireAdmin() {
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')?.value
-  const expected = hash(process.env.ADMIN_PASSWORD || '')
+  const adminPassword = await decrypt(process.env.ADMIN_PASSWORD || '')
+  const expected = await hash(adminPassword)
   if (session !== expected) throw new Error('未授权访问')
 }
 
 export async function login(formData: FormData) {
   const password = formData.get('password') as string
-  if (password === process.env.ADMIN_PASSWORD) {
-    const token = hash(password)
+  const adminPassword = await decrypt(process.env.ADMIN_PASSWORD || '')
+  if (password === adminPassword) {
+    const token = await hash(password)
     const cookieStore = await cookies()
     cookieStore.set('admin_session', token, {
       httpOnly: true,
@@ -36,6 +41,7 @@ export async function login(formData: FormData) {
 // ---------- 文章 ----------
 export async function createPost(formData: FormData) {
   await requireAdmin()
+  const supabaseAdmin = await getSupabaseAdmin()
   const title = formData.get('title') as string
   const summary = formData.get('summary') as string
   const content = formData.get('content') as string
@@ -63,6 +69,7 @@ export async function createPost(formData: FormData) {
 
 export async function updatePost(id: string, formData: FormData) {
   await requireAdmin()
+  const supabaseAdmin = await getSupabaseAdmin()
   const title = formData.get('title') as string
   const summary = formData.get('summary') as string
   const content = formData.get('content') as string
@@ -91,6 +98,7 @@ export async function updatePost(id: string, formData: FormData) {
 
 export async function deletePost(id: string) {
   await requireAdmin()
+  const supabaseAdmin = await getSupabaseAdmin()
   const { error } = await supabaseAdmin.from('posts').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/blog', 'layout')
@@ -101,6 +109,7 @@ export async function deletePost(id: string) {
 // ---------- 每日成长 ----------
 export async function upsertDailyLog(date: string, content: string) {
   await requireAdmin()
+  const supabaseAdmin = await getSupabaseAdmin()
   const { error } = await supabaseAdmin.from('daily_logs').upsert({
     date,
     content,
@@ -116,6 +125,7 @@ export async function upsertDailyLog(date: string, content: string) {
 // ---------- 关于我 ----------
 export async function updateAbout(content: string) {
   await requireAdmin()
+  const supabaseAdmin = await getSupabaseAdmin()
   const { error } = await supabaseAdmin.from('about').update({
     content,
     updated_at: new Date().toISOString(),

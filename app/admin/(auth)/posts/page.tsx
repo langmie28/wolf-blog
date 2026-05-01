@@ -1,8 +1,9 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import Link from 'next/link'
 import DeleteButton from './DeleteButton'
 
 export default async function AdminPostsPage() {
+  const supabaseAdmin = await getSupabaseAdmin()
   const { data: posts } = await supabaseAdmin
     .from('posts')
     .select('*')

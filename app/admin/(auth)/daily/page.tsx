@@ -1,7 +1,8 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import DailyLogForm from './DailyLogForm'
 
 export default async function AdminDailyPage() {
+  const supabaseAdmin = await getSupabaseAdmin()
   const { data: logs } = await supabaseAdmin
     .from('daily_logs')
     .select('date, content')

@@ -1,7 +1,8 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import AboutForm from './AboutForm'
 
 export default async function AdminAboutPage() {
+  const supabaseAdmin = await getSupabaseAdmin()
   const { data } = await supabaseAdmin.from('about').select('content').single()
 
   return (
